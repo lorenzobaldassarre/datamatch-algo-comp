@@ -157,15 +157,33 @@ static int find_worst_partner(int candidate, int** scores,
 ///      - match_sets: An array of sets where match_sets[i] contains the indices
 ///                    of individuals currently matched with individual `i`.
 
-bool try_propose(const int proposer, 
+bool try_propose(const int proposer,
                         const size_t iter,
-                        int** sorted_indices, 
-                        int** scores, 
-                        bool** matched, 
+                        int** sorted_indices,
+                        int** scores,
+                        bool** matched,
                         int* cur_poss,
-                        const int ucount, 
+                        const int ucount,
                         std::set<int>* match_sets) {
-    // TODO
+    while (cur_poss[proposer] < ucount) {
+        int candidate = sorted_indices[proposer][cur_poss[proposer]];
+        cur_poss[proposer]++;
+
+        if (scores[proposer][candidate] == -1) continue;
+        if (matched[proposer][candidate]) continue;
+
+        if (match_sets[candidate].size() < iter) {
+            addmatch(proposer, candidate, matched, match_sets);
+            return true;
+        }
+
+        int worst = find_worst_partner(candidate, scores, match_sets);
+        if (scores[candidate][proposer] > scores[candidate][worst]) {
+            removematch(candidate, worst, matched, match_sets);
+            addmatch(proposer, candidate, matched, match_sets);
+            return true;
+        }
+    }
     return false;
 }
 
@@ -178,18 +196,29 @@ bool try_propose(const int proposer,
 ///     `cur_poss[i] = 0` for all `i`). Only propose if the proposer has
 ///     remaining capacity (i.e. `match_sets[proposer].size() < iter`).
 
-void make_matches(const int target, 
-                  int** sorted_indices, 
+void make_matches(const int target,
+                  int** sorted_indices,
                   int** scores,
-                  bool** matched, 
+                  bool** matched,
                   int* cur_poss,
                   const int ucount,
                   std::set<int>* match_sets) {
+    std::fill(cur_poss, cur_poss + ucount, 0);
 
-    // TODO
-    return;
+    for (int iter = 1; iter <= target; ++iter) {
+        bool changed = true;
+        while (changed) {
+            changed = false;
+            for (int p = 0; p < ucount; ++p) {
+                if (match_sets[p].size() < static_cast<size_t>(iter) &&
+                    try_propose(p, iter, sorted_indices, scores, matched,
+                                cur_poss, ucount, match_sets)) {
+                    changed = true;
+                }
+            }
+        }
+    }
 }
-
 // ================================================
 // END OF TODO 
 // ================================================
